@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mikrointervention – Formular</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f7f3ee;
+            font-family: "Segoe UI", sans-serif;
+        }
+        nav {
+            background-color: #7a3e2f;
+        }
+        nav .navbar-brand, 
+        nav .nav-link {
+            color: #fff !important;
+            font-weight: 500;
+        }
+        footer {
+            background-color: #7a3e2f;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-top: 40px;
+        }
+        .container-box {
+            background: #fff7f2;
+            border: 1px solid #e0c1b2;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            margin-top: 40px;
+        }
+        h1 {
+            color: #7a3e2f;
+        }
+        .gps-status {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            font-weight: 500;
+        }
+        .gps-loading {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+        }
+        .gps-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .gps-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .gps-button {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar placeholder -->
+  <div id="nav-placeholder"></div>
+
+    <main class="container">
+        <div class="container-box">
+            <h1 class="mb-3">Nice*</h1>
+            <p class="mb-4">Bitte erlaube zuerst den Standortzugriff, dann fülle das Formular aus.</p>
+
+            <!-- GPS Standort Button -->
+            <button id="getLocationBtn" class="btn btn-primary gps-button">
+                📍 Standort erfassen
+            </button>
+            
+            <div id="gpsStatus" style="display:none;"></div>
+
+            <!-- Versteckte Felder für Koordinaten -->
+            <input type="hidden" id="latitude" value="">
+            <input type="hidden" id="longitude" value="">
+
+            <!-- Google Form Embed mit vorausgefüllten Koordinaten -->
+            <div id="formContainer">
+                <iframe 
+                    id="googleForm"
+                    src="https://docs.google.com/forms/d/e/1FAIpQLSemZfrk9stZYdTf7AGQ2DuUJxPr6IhEF5Y9hNBm4C6JECjHmQ/viewform?embedded=true"
+                    width="100%" 
+                    height="1200" 
+                    frameborder="0" 
+                    marginheight="0" 
+                    marginwidth="0"
+                    style="border: 1px solid #d3b9a9; border-radius: 6px;">
+                    Wird geladen …
+                </iframe>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <a href="?page=about">© 2025 Nice*</a>
+    </footer>
+
+    <script>
+        const getLocationBtn = document.getElementById('getLocationBtn');
+        const gpsStatus = document.getElementById('gpsStatus');
+        const latInput = document.getElementById('latitude');
+        const lngInput = document.getElementById('longitude');
+
+        getLocationBtn.addEventListener('click', function() {
+            if (!navigator.geolocation) {
+                showStatus('error', '✗ Geolocation wird von diesem Browser nicht unterstützt.');
+                return;
+            }
+
+            showStatus('loading', '⏳ Standort wird ermittelt...');
+            getLocationBtn.disabled = true;
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    latInput.value = lat;
+                    lngInput.value = lng;
+
+                    showStatus('success', `✓ Standort erfasst: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+                    
+                    // Form URL mit vorausgefüllten Koordinaten aktualisieren
+                    updateFormWithCoordinates(lat, lng);
+                    
+                    getLocationBtn.textContent = '✓ Standort erfasst';
+                    getLocationBtn.classList.remove('btn-primary');
+                    getLocationBtn.classList.add('btn-success');
+                },
+                function(error) {
+                    let errorMsg = '✗ Standort konnte nicht ermittelt werden. ';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMsg += 'Berechtigung verweigert. Bitte erlaube den Standortzugriff in deinen Browser-Einstellungen.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMsg += 'Standortinformationen nicht verfügbar.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMsg += 'Zeitüberschreitung bei der Standortabfrage.';
+                            break;
+                        default:
+                            errorMsg += 'Unbekannter Fehler.';
+                    }
+                    showStatus('error', errorMsg);
+                    getLocationBtn.disabled = false;
+                    console.error('Geolocation error:', error.code, error.message);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        });
+
+        function showStatus(type, message) {
+            gpsStatus.style.display = 'block';
+            gpsStatus.className = 'gps-status';
+            
+            if (type === 'loading') {
+                gpsStatus.classList.add('gps-loading');
+            } else if (type === 'success') {
+                gpsStatus.classList.add('gps-success');
+            } else if (type === 'error') {
+                gpsStatus.classList.add('gps-error');
+            }
+            
+            gpsStatus.textContent = message;
+        }
+
+        function updateFormWithCoordinates(lat, lng) {
+            // WICHTIG: Du musst die Entry-IDs deiner Latitude/Longitude Felder ermitteln!
+            // Siehe Anleitung unten
+            const formUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSemZfrk9stZYdTf7AGQ2DuUJxPr6IhEF5Y9hNBm4C6JECjHmQ/viewform';
+            
+            // Ersetze XXXXXX und YYYYYY mit den echten Entry-IDs
+            const prefilledUrl = `${formUrl}?embedded=true&entry.1870734049=${lat}&entry.2051217440=${lng}`;
+            
+            document.getElementById('googleForm').src = prefilledUrl;
+        }
+
+        // Optional: Standort automatisch beim Laden erfassen
+        // window.onload = function() {
+        //     getLocationBtn.click();
+        // };
+    </script>
+      <script src="/js/nav.js"></script>
+</body>
+</html>
