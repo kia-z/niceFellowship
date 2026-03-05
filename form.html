@@ -34,8 +34,13 @@
         <!-- Art der Mikrointervention -->
         <div class="mb-3">
           <label for="art_intervention" class="form-label">Art der Mikrointervention</label>
-          <input class="form-control" id="art_intervention" name="art_intervention">
-        </div>
+<select class="form-select" id="ortstyp" name="ortstyp" required>
+            <option value="">-- Select --</option>
+            <option value="school">Kunst</option>
+            <option value="street">Street Art</option>
+            <option value="building">Alltagshandlung</option>
+          </select>
+                </div>
 
         <!-- Standort -->
         <div class="mb-3">
